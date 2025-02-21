@@ -37,6 +37,7 @@ model User {
   program_admins  Program[] @relation("AdminRelation")
   course_editors  Course[]  @relation("EditorRelation")
   course_admins   Course[]  @relation("AdminRelation")
+  my_courses      Course[]  @relation("PinnedCourse")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,6 +117,7 @@ model Course {
   graphs   Graph[]
   editors  User[]    @relation("EditorRelation")
   admins   User[]    @relation("AdminRelation")
+  pinnedBy User[]    @relation("PinnedCourse")
 }
 
 // Graph <*---> Course

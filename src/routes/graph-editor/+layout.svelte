@@ -24,7 +24,7 @@
 <Toaster closeButton />
 
 <nav
-	class="fixed top-0 flex w-full items-center justify-between bg-blue-100 px-4 py-2 text-2xl text-blue-900"
+	class="fixed top-0 z-10 flex w-full items-center justify-between bg-blue-100/80 px-4 py-2 text-2xl text-blue-900 backdrop-blur-sm backdrop-saturate-200"
 >
 	<h1 class="flex items-center gap-2 p-2">
 		<span class="font-bold">PRIME</span>
