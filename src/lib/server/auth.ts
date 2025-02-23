@@ -36,7 +36,7 @@ function SurfConextProvider<P extends SurfConextProfile>(): OIDCConfig<P> {
 		type: 'oidc',
 		issuer: env.SURFCONEXT_ISSUER,
 		wellKnown: `${env.SURFCONEXT_ISSUER}/.well-known/openid-configuration`,
-		clientId: env.SURFCONEXT_CLIENT_ID,
+		clientId: env.DEPLOY_PRIME_URL || env.SURFCONEXT_CLIENT_ID,
 		clientSecret: env.SURFCONEXT_CLIENT_SECRET,
 		allowDangerousEmailAccountLinking: true, // Not sure if this is safe @juliavdkris
 
