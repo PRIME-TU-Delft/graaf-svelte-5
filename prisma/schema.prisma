@@ -33,10 +33,11 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  program_editors Program[] @relation("EditorRelation")
-  program_admins  Program[] @relation("AdminRelation")
+  program_editors Program[] @relation("EditorProgramRelation")
+  program_admins  Program[] @relation("AdminProgramRelation")
   course_editors  Course[]  @relation("EditorRelation")
   course_admins   Course[]  @relation("AdminRelation")
+  my_courses      Course[]  @relation("PinnedCourse")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -91,9 +92,9 @@ model Program {
   updatedAt DateTime @updatedAt
 
   // Relations
-  courses Course[]
-  editors User[]   @relation("EditorRelation")
-  admins  User[]   @relation("AdminRelation")
+  courses Course[] @relation("ProgramCourse")
+  editors User[]   @relation("EditorProgramRelation")
+  admins  User[]   @relation("AdminProgramRelation")
 }
 
 enum CourseType {
@@ -112,10 +113,11 @@ model Course {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
-  programs Program[]
-  graphs   Graph[]
+  programs Program[] @relation("ProgramCourse")
+  graphs   Graph[]   @relation("CourseGraph")
   editors  User[]    @relation("EditorRelation")
   admins   User[]    @relation("AdminRelation")
+  pinnedBy User[]    @relation("PinnedCourse")
 }
 
 // Graph <*---> Course
@@ -124,9 +126,9 @@ model Graph {
   name     String
   courseId String
 
-  course   Course    @relation(fields: [courseId], references: [code])
+  course   Course    @relation("CourseGraph", fields: [courseId], references: [code])
   domains  Domain[]
-  subjects Subject[]
+  subjects Subject[] @relation("SubjectGraph")
   lectures Lecture[]
   // links			Link[]
 
@@ -179,7 +181,7 @@ model Subject {
 
   graphId  Int
   domainId Int?
-  graph    Graph     @relation(fields: [graphId], references: [id], onDelete: Cascade)
+  graph    Graph     @relation("SubjectGraph", fields: [graphId], references: [id], onDelete: Cascade)
   domain   Domain?   @relation(fields: [domainId], references: [id])
   lectures Lecture[]
 

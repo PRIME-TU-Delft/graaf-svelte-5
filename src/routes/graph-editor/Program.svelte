@@ -5,20 +5,25 @@
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
-	import type { Course, Program } from '@prisma/client';
+	import { courseSchema } from '$lib/zod/programCourseSchema';
+	import type { Course, Program, User } from '@prisma/client';
 	import { useId } from 'bits-ui';
 	import Settings from 'lucide-svelte/icons/settings';
 	import { type Infer, type SuperValidated } from 'sveltekit-superforms';
 	import CreateNewCourseButton from './CreateNewCourseButton.svelte';
-	import { courseSchema } from '$lib/zod/programCourseSchema';
+	import CourseGrid from './CourseGrid.svelte';
 
 	type Props = {
-		program: Program & { courses: Course[] };
+		user?: User;
+		program: Program & { courses: (Course & { pinnedBy: Pick<User, 'id'>[] })[] } & {
+			editors: Pick<User, 'id'>[];
+			admins: Pick<User, 'id'>[];
+		};
 		courses: Promise<Course[]>;
 		courseForm: SuperValidated<Infer<typeof courseSchema>>;
 	};
 
-	let { program, courses, courseForm }: Props = $props();
+	let { user, program, courses, courseForm }: Props = $props();
 
 	const triggerId = useId();
 
@@ -36,27 +41,17 @@
 		<h3 class="text-lg font-semibold text-blue-950">{program.name}</h3>
 
 		<div class="flex gap-2">
-			{@render newCourseButton()}
+			{#if user?.role === 'ADMIN' || program.editors.find((u) => u.id == user?.id) || program.admins?.find((u) => u.id == user?.id)}
+				{@render newCourseButton()}
+			{/if}
 
-			<Button.Root href="./programs/{program.id}/settings"><Settings /> Settings</Button.Root>
+			<Button.Root href="graph-editor/programs/{program.id}/settings"
+				><Settings /> Settings</Button.Root
+			>
 		</div>
 	</div>
 
-	<div class="grid grid-cols-2 gap-1 p-2 md:grid-cols-2 md:gap-2">
-		{#each program.courses as course}
-			<a
-				href="graph-editor/courses/{course.code}"
-				class="flex items-center justify-between rounded bg-white/90 p-2 transition-colors hover:bg-blue-50"
-			>
-				<p>{course.name}</p>
-				<p class="text-xs text-blue-900">{course.code}</p>
-			</a>
-		{:else}
-			<p class="bg-white/80 p-2 col-span-3 text-slate-900/60 rounded">
-				This program has no courses yet.
-			</p>
-		{/each}
-	</div>
+	<CourseGrid courses={program.courses} {user} />
 </div>
 
 {#snippet newCourseButton()}

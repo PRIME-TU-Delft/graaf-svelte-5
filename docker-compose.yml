@@ -1,5 +1,5 @@
 services:
-  db-proposal:
+  db:
     image: postgres
     restart: always
     ports:
@@ -7,4 +7,13 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: local
+  db-test:
+    image: postgres
+    restart: always
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
       POSTGRES_DB: local
