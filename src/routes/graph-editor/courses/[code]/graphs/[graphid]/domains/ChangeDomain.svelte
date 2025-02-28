@@ -73,7 +73,7 @@
 			<Menubar.Item class="p-0">
 				<DialogButton
 					button="Edit"
-					title="Domain Relationship Settings"
+					title="Domain Settings"
 					description="Edit the settings of the domain {domain.name}."
 					bind:open={changeDomainDialog}
 					variant="outline"

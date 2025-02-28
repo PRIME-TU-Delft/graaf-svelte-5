@@ -1,26 +1,16 @@
+import { GraphActions, hasCourseGraphPermissions } from '$lib/server/actions/Graphs.js';
+import { getUser } from '$lib/server/actions/Users.js';
 import prisma from '$lib/server/db/prisma';
-import type { ServerLoad } from '@sveltejs/kit';
-import { setError, superValidate, type Infer, type SuperValidated } from 'sveltekit-superforms';
+import { duplicateGraphSchema, graphSchema, graphSchemaWithId } from '$lib/zod/graphSchema.js';
+import type { Course, Graph, Prisma } from '@prisma/client';
+import { redirect, type ServerLoad } from '@sveltejs/kit';
+import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { graphSchema } from '$lib/zod/graphSchema.js';
-import type { Course, Graph } from '@prisma/client';
-import type { OrError } from '$lib/utils.js';
 
-export const load = (async ({ params }) => {
-	const result = {
-		course: undefined,
-		graphForm: await superValidate(zod(graphSchema)),
-		error: ''
-	} as OrError<{
-		course: Course;
-		graphForm: SuperValidated<Infer<typeof graphSchema>>;
-		graphs: Graph[];
-	}>;
+export const load = (async ({ params, locals }) => {
+	if (!params.code) redirect(303, '/');
 
-	if (!params.code) {
-		result.error = 'Course code is required';
-		return result;
-	}
+	const user = await getUser({ locals });
 
 	try {
 		const dbCourse = await prisma.course.findFirst({
@@ -37,25 +27,58 @@ export const load = (async ({ params }) => {
 							}
 						}
 					}
+				},
+				admins: { select: { id: true } },
+				editors: { select: { id: true } },
+				programs: {
+					include: {
+						admins: { select: { id: true } },
+						editors: { select: { id: true } }
+					}
 				}
 			}
 		});
 
-		if (!dbCourse) {
-			result.error = 'Course not found';
-			return result;
-		}
+		if (!dbCourse) throw new Error('Course not found, or you do not have access to it');
+
+		// Get all courses that the user has access to
+		const coursesAccessible = prisma.course.findMany({
+			where: {
+				NOT: {
+					code: dbCourse.code
+				},
+				...hasCourseGraphPermissions(user)
+			},
+			include: {
+				graphs: { select: { name: true } }
+			},
+			orderBy: {
+				name: 'asc'
+			}
+		});
 
 		// Happy path
 		return {
 			error: undefined,
 			graphSchema: await superValidate(zod(graphSchema)),
+			editGraphForm: await superValidate(zod(graphSchemaWithId)),
+			duplicateGraphForm: await superValidate(zod(duplicateGraphSchema)),
+			coursesAccessible,
 			course: dbCourse,
-			graphs: dbCourse.graphs
+			graphs: dbCourse.graphs,
+			user
 		};
 	} catch (e: unknown) {
-		result.error = e instanceof Error ? e.message : `${e}`;
-		return result;
+		return {
+			error: e instanceof Error ? e.message : `${e}`,
+			graphSchema: await superValidate(zod(graphSchema)),
+			editGraphForm: await superValidate(zod(graphSchemaWithId)),
+			duplicateGraphForm: await superValidate(zod(duplicateGraphSchema)),
+			coursesAccessible: new Promise(() => []) as Prisma.PrismaPromise<Course[]>,
+			course: undefined,
+			graphs: [],
+			user
+		};
 	}
 }) satisfies ServerLoad;
 
@@ -63,19 +86,21 @@ export const actions = {
 	'add-graph-to-course': async (event) => {
 		const form = await superValidate(event, zod(graphSchema));
 
-		if (!form.valid) {
-			return setError(form, 'name', 'Invalid graph name');
-		}
+		return GraphActions.addGraphToCourse(await getUser(event), form);
+	},
+	'edit-graph': async (event) => {
+		const form = await superValidate(event, zod(graphSchemaWithId));
 
-		try {
-			await prisma.graph.create({
-				data: {
-					name: form.data.name,
-					courseId: form.data.courseCode
-				}
-			});
-		} catch (e: unknown) {
-			return setError(form, 'name', e instanceof Error ? e.message : `${e}`);
-		}
+		return GraphActions.editGraph(await getUser(event), form);
+	},
+	'delete-graph': async (event) => {
+		const form = await superValidate(event, zod(graphSchemaWithId));
+
+		return GraphActions.deleteGraphFromCourse(await getUser(event), form);
+	},
+	'duplicate-graph': async (event) => {
+		const form = await superValidate(event, zod(duplicateGraphSchema));
+
+		return GraphActions.duplicateGraph(await getUser(event), form, event.params.code);
 	}
 };

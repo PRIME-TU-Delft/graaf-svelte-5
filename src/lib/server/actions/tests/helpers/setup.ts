@@ -1,6 +1,6 @@
 import resetDb from './reset-db';
 import { beforeEach } from 'vitest';
-import { users } from './test-users';
+import { courseAdminUser, courseEditorUser, users } from './test-users';
 import prisma from '$lib/server/db/prisma';
 import type { Domain, Program, Subject, User } from '@prisma/client';
 
@@ -61,7 +61,7 @@ async function createCourses(programs: Program[]) {
 			programs: {
 				connect: [{ id: programs[0].id }, { id: programs[1].id }, { id: programs[2].id }]
 			},
-			admins: { connect: { id: users[3].id } } // add the course admin user
+			admins: { connect: { id: courseAdminUser.id } } // add the course admin user
 		}
 	});
 
@@ -72,7 +72,7 @@ async function createCourses(programs: Program[]) {
 			programs: {
 				connect: [{ id: programs[0].id }, { id: programs[1].id }, { id: programs[2].id }]
 			},
-			editors: { connect: { id: users[4].id } } // add the course editor user
+			editors: { connect: { id: courseEditorUser.id } } // add the course editor user
 		}
 	});
 

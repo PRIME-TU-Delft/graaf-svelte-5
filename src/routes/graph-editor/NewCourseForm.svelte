@@ -18,7 +18,6 @@
 	};
 
 	const { form, programId }: Props = $props();
-
 	const { form: formData, enhance } = form;
 
 	let courseCodes: string[] = [];

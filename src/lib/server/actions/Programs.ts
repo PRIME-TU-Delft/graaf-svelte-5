@@ -28,21 +28,11 @@ export function hasProgramPermissions(
 	// If the user is a super-admin, they can edit any program. Thus no special where permission is required
 	if (options.superAdmin && user.role == 'ADMIN') return {};
 
-	const hasEditorPermission = {
-		editors: {
-			some: {
-				id: user.id
-			}
-		}
-	};
+	// If no permissions are set, return empty permissions
+	if (!options.admin && !options.editor) return {};
 
-	const hasAdminPermission = {
-		admins: {
-			some: {
-				id: user.id
-			}
-		}
-	};
+	const hasEditorPermission = { editors: { some: { id: user.id } } };
+	const hasAdminPermission = { admins: { some: { id: user.id } } };
 
 	const hasPermission: (typeof hasEditorPermission | typeof hasAdminPermission)[] = [];
 	if (options.editor) hasPermission.push(hasEditorPermission);
